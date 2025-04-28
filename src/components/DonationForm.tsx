@@ -1,10 +1,10 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Badge } from '@/components/ui/badge';
 import { FoodCategory } from '@/utils/donationUtils';
 import { toast } from '@/components/ui/sonner';
 import { CheckCircle2 } from 'lucide-react';
@@ -143,8 +143,6 @@ const DonationForm = ({ onSubmit, onCancel }: DonationFormProps) => {
     setSubmitting(true);
     
     try {
-      // Here we would normally send the data to an API
-      // For now, we'll just simulate a submission
       await new Promise(resolve => setTimeout(resolve, 1500));
       
       onSubmit({

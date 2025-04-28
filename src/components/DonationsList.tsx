@@ -35,7 +35,7 @@ const DonationsList = ({
         description="There are currently no food donations available. Please check back later or create a new donation."
         action={{
           label: "Add New Donation",
-          onClick: () => console.log("New donation action"),
+          onClick: () => console.log("New donation action")
         }}
         className="py-12"
       />
