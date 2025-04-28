@@ -1,9 +1,10 @@
 
-import React, { useState } from 'react';
-import { FoodItem } from '@/data/mockData';
+import React from 'react';
 import FoodCard from './FoodCard';
 import EmptyState from './EmptyState';
-import { Search, Filter, PlusCircle } from 'lucide-react';
+import { FoodItem } from '@/data/mockData';
+import { Button } from './ui/button';
+import { Plus } from 'lucide-react';
 
 interface InventoryListProps {
   items: FoodItem[];
@@ -11,118 +12,49 @@ interface InventoryListProps {
   onAddClick: () => void;
 }
 
-type SortOption = 'expiry-asc' | 'expiry-desc' | 'name-asc' | 'name-desc';
-
-const InventoryList: React.FC<InventoryListProps> = ({ 
-  items, 
-  onDelete,
-  onAddClick 
-}) => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<string>('All');
-  const [sortBy, setSortBy] = useState<SortOption>('expiry-asc');
-  
-  const uniqueCategories = ['All', ...new Set(items.map(item => item.category))];
-  
-  // Filter items based on search term and category
-  const filteredItems = items.filter(item => {
-    const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = selectedCategory === 'All' || item.category === selectedCategory;
-    return matchesSearch && matchesCategory;
-  });
-  
-  // Sort items based on selected option
-  const sortedItems = [...filteredItems].sort((a, b) => {
-    switch (sortBy) {
-      case 'expiry-asc':
-        return a.expiryDate.getTime() - b.expiryDate.getTime();
-      case 'expiry-desc':
-        return b.expiryDate.getTime() - a.expiryDate.getTime();
-      case 'name-asc':
-        return a.name.localeCompare(b.name);
-      case 'name-desc':
-        return b.name.localeCompare(a.name);
-      default:
-        return 0;
-    }
-  });
-  
-  // If there are no items, show empty state
+const InventoryList: React.FC<InventoryListProps> = ({ items, onDelete, onAddClick }) => {
   if (items.length === 0) {
-    return <EmptyState onAddClick={onAddClick} />;
+    return (
+      <EmptyState
+        title="Your inventory is empty"
+        description="Start adding items to track their expiry dates and reduce food waste"
+        action={{
+          label: "Add your first item",
+          onClick: onAddClick
+        }}
+      />
+    );
   }
   
+  const itemsByCategory = items.reduce((acc, item) => {
+    const category = item.category || 'Other';
+    if (!acc[category]) {
+      acc[category] = [];
+    }
+    acc[category].push(item);
+    return acc;
+  }, {} as Record<string, FoodItem[]>);
+  
   return (
-    <div className="space-y-4">
-      <div className="flex flex-col md:flex-row gap-4">
-        {/* Search box */}
-        <div className="relative flex-1">
-          <Search size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-          <input
-            type="text"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Search items..."
-            className="pl-10 w-full p-2 border rounded-md"
-          />
-        </div>
-        
-        {/* Category filter */}
-        <div className="flex gap-2 items-center">
-          <Filter size={18} className="text-gray-400" />
-          <select
-            value={selectedCategory}
-            onChange={(e) => setSelectedCategory(e.target.value)}
-            className="p-2 border rounded-md"
-          >
-            {uniqueCategories.map(category => (
-              <option key={category} value={category}>{category}</option>
+    <div>
+      <div className="flex justify-between items-center mb-4">
+        <h3 className="text-lg font-semibold">Items ({items.length})</h3>
+        <Button onClick={onAddClick} size="sm">
+          <Plus className="mr-2 h-4 w-4" />
+          Add Item
+        </Button>
+      </div>
+      
+      {Object.entries(itemsByCategory).map(([category, categoryItems]) => (
+        <div key={category} className="mb-8">
+          <h4 className="font-medium text-gray-700 mb-3 capitalize">{category}</h4>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {categoryItems.map(item => (
+              <FoodCard key={item.id} item={item} onDelete={onDelete} />
             ))}
-          </select>
-          
-          {/* Sort options */}
-          <select
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value as SortOption)}
-            className="p-2 border rounded-md"
-          >
-            <option value="expiry-asc">Expires Soon</option>
-            <option value="expiry-desc">Expires Later</option>
-            <option value="name-asc">Name (A-Z)</option>
-            <option value="name-desc">Name (Z-A)</option>
-          </select>
+          </div>
         </div>
-
-        {/* Add item button (for mobile it will be at the bottom) */}
-        <button
-          onClick={onAddClick}
-          className="hidden md:flex items-center gap-1 bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-md transition-colors"
-        >
-          <PlusCircle size={18} />
-          <span>Add Item</span>
-        </button>
-      </div>
-      
-      {/* Summary */}
-      <p className="text-sm text-gray-500">
-        {sortedItems.length} {sortedItems.length === 1 ? 'item' : 'items'} found
-        {selectedCategory !== 'All' && ` in ${selectedCategory}`}
-      </p>
-      
-      {/* List of items */}
-      <div className="grid gap-4 sm:grid-cols-1 lg:grid-cols-2">
-        {sortedItems.map(item => (
-          <FoodCard key={item.id} item={item} onDelete={onDelete} />
-        ))}
-      </div>
-      
-      {/* Floating add button for mobile */}
-      <button
-        onClick={onAddClick}
-        className="md:hidden fixed bottom-6 right-6 bg-primary hover:bg-primary/90 text-white p-3 rounded-full shadow-lg transition-colors"
-      >
-        <PlusCircle size={24} />
-      </button>
+      ))}
     </div>
   );
 };

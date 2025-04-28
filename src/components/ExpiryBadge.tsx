@@ -1,78 +1,85 @@
 
 import React from 'react';
-import { getExpiryStatus, getDaysUntilExpiry } from '@/utils/dateUtils';
-import { cn } from '@/lib/utils';
+import { differenceInDays, isPast } from 'date-fns';
+import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { cn } from '@/lib/utils';
 
 interface ExpiryBadgeProps {
   expiryDate: Date;
+  purchaseDate?: Date;
+  showProgressBar?: boolean;
   className?: string;
-  showProgress?: boolean;
 }
 
 const ExpiryBadge: React.FC<ExpiryBadgeProps> = ({ 
   expiryDate, 
-  className = '',
-  showProgress = false
+  purchaseDate, 
+  showProgressBar = false,
+  className = ''
 }) => {
-  const status = getExpiryStatus(expiryDate);
-  const daysLeft = getDaysUntilExpiry(expiryDate);
+  const today = new Date();
+  const isExpired = isPast(expiryDate);
+  const daysUntilExpiry = differenceInDays(expiryDate, today);
   
-  const getStatusText = () => {
-    if (daysLeft < 0) return `Expired ${Math.abs(daysLeft)} days ago`;
-    if (daysLeft === 0) return 'Expires today';
-    if (daysLeft === 1) return 'Expires tomorrow';
-    return `Expires in ${daysLeft} days`;
-  };
+  let status: 'fresh' | 'warning' | 'danger' | 'expired';
+  let badgeText: string;
 
-  const getBadgeColor = () => {
-    switch (status) {
-      case 'expired':
-        return 'bg-destructive text-destructive-foreground';
-      case 'critical':
-        return 'bg-red-500 text-white';
-      case 'warning':
-        return 'bg-amber-500 text-white';
-      case 'safe':
-        return 'bg-green-500 text-white';
-      default:
-        return 'bg-secondary text-secondary-foreground';
+  if (isExpired) {
+    status = 'expired';
+    badgeText = 'Expired';
+  } else if (daysUntilExpiry <= 1) {
+    status = 'danger';
+    badgeText = 'Today';
+  } else if (daysUntilExpiry <= 3) {
+    status = 'danger';
+    badgeText = `${daysUntilExpiry} days`;
+  } else if (daysUntilExpiry <= 7) {
+    status = 'warning';
+    badgeText = `${daysUntilExpiry} days`;
+  } else {
+    status = 'fresh';
+    badgeText = `${daysUntilExpiry} days`;
+  }
+  
+  const badgeVariants = {
+    expired: 'bg-destructive text-destructive-foreground',
+    danger: 'bg-red-100 text-red-800 border-red-200',
+    warning: 'bg-amber-100 text-amber-800 border-amber-200',
+    fresh: 'bg-green-100 text-green-800 border-green-200'
+  };
+  
+  // Calculate progress percentage if we have a purchase date
+  let progressPercentage = 0;
+  if (showProgressBar && purchaseDate) {
+    const totalDays = differenceInDays(expiryDate, purchaseDate);
+    const elapsedDays = differenceInDays(today, purchaseDate);
+    if (totalDays > 0) {
+      progressPercentage = Math.min(Math.max((elapsedDays / totalDays) * 100, 0), 100);
     }
-  };
-
-  const getProgressColor = () => {
-    switch (status) {
-      case 'expired':
-        return 'bg-destructive';
-      case 'critical':
-        return 'bg-red-500';
-      case 'warning':
-        return 'bg-amber-500';
-      case 'safe':
-        return 'bg-green-500';
-      default:
-        return 'bg-secondary';
-    }
-  };
-
-  const getProgressValue = () => {
-    if (daysLeft < 0) return 0;
-    // Assuming max shelf life is 14 days for calculation purposes
-    const maxShelfLife = 14;
-    return Math.min(Math.max((daysLeft / maxShelfLife) * 100, 0), 100);
-  };
+  }
+  
+  const progressColorClass = 
+    status === 'expired' ? 'bg-destructive' :
+    status === 'danger' ? 'bg-red-500' :
+    status === 'warning' ? 'bg-amber-500' :
+    'bg-green-500';
 
   return (
-    <div className={cn('flex flex-col gap-1', className)}>
-      <span className={cn('px-2 py-1 text-xs font-medium rounded-md inline-flex items-center justify-center', getBadgeColor())}>
-        {getStatusText()}
-      </span>
+    <div className={className}>
+      <Badge variant="outline" className={cn(
+        'font-normal',
+        badgeVariants[status]
+      )}>
+        {badgeText}
+      </Badge>
       
-      {showProgress && (
+      {showProgressBar && (
         <Progress 
-          value={getProgressValue()}
-          className="h-1.5"
-          indicatorClassName={getProgressColor()}
+          value={progressPercentage} 
+          className="h-1 mt-1"
+          // Remove the indicatorClassName prop as it doesn't exist
+          // Use className directly for styling the progress bar
         />
       )}
     </div>

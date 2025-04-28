@@ -51,7 +51,8 @@ const Index = () => {
       toast({
         title: "Items Expiring Today",
         description: `${expiringToday.length} item${expiringToday.length > 1 ? 's' : ''} in your inventory expire${expiringToday.length === 1 ? 's' : ''} today.`,
-        variant: "warning"
+        // Change "warning" to a valid variant
+        variant: "destructive"
       });
     }
   }, [foodItems, toast]);
